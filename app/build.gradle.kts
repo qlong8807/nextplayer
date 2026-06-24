@@ -38,6 +38,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            if (signingConfigs.findByName("release") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
 
         getByName("debug") {
@@ -59,6 +62,15 @@ android {
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
+        }
+
+        if (project.hasProperty("android.injected.signing.store.file")) {
+            create("release") {
+                storeFile = file(project.property("android.injected.signing.store.file") as String)
+                storePassword = project.property("android.injected.signing.store.password") as String
+                keyAlias = project.property("android.injected.signing.key.alias") as String
+                keyPassword = project.property("android.injected.signing.key.password") as String
+            }
         }
     }
 
