@@ -21,6 +21,18 @@ data class Folder(
     }
 }
 
+/**
+ * 将已置顶的文件夹排在前面，置顶文件夹之间按置顶时间降序排列（最近置顶的在最前）。
+ * 非置顶文件夹保持原有顺序不变。
+ */
+fun List<Folder>.sortedWithPinned(pinnedFolders: Map<String, Long>): List<Folder> {
+    if (pinnedFolders.isEmpty()) return this
+    val pinned = filter { it.path in pinnedFolders }
+        .sortedByDescending { pinnedFolders[it.path] ?: 0L }
+    val unpinned = filter { it.path !in pinnedFolders }
+    return pinned + unpinned
+}
+
 fun List<Folder>.findClosestFolder(videoPath: String): Folder? {
     val videoDirectory = videoPath.substringBeforeLast("/")
 

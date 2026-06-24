@@ -141,6 +141,8 @@
     <string name="seek_increment">Seek increment</string>
     <string name="seconds">%1$s seconds</string>
     <string name="share">Share</string>
+    <string name="pin">Pin</string>
+    <string name="unpin">Unpin</string>
     <string name="delete">Delete</string>
     <string name="delete_file">The following file will be deleted permanently</string>
     <string name="subtitle_text_encoding">Subtitle text encoding</string>

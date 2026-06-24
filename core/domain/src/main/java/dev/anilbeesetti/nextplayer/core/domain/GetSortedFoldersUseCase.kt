@@ -6,6 +6,7 @@ import dev.anilbeesetti.nextplayer.core.data.repository.MediaRepository
 import dev.anilbeesetti.nextplayer.core.data.repository.PreferencesRepository
 import dev.anilbeesetti.nextplayer.core.model.Folder
 import dev.anilbeesetti.nextplayer.core.model.Sort
+import dev.anilbeesetti.nextplayer.core.model.sortedWithPinned
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -30,6 +31,7 @@ class GetSortedFoldersUseCase @Inject constructor(
 
             val sort = Sort(by = preferences.sortBy, order = preferences.sortOrder)
             nonExcludedDirectories.sortedWith(sort.folderComparator())
+                .sortedWithPinned(preferences.pinnedFolders)
         }.flowOn(defaultDispatcher)
     }
 }

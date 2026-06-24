@@ -110,6 +110,7 @@ fun MediaView(
                     isRecentlyPlayedFolder = folder.path == recentlyPlayedFolder?.path,
                     preferences = preferences,
                     selected = selected,
+                    isPinned = folder.path in preferences.pinnedFolders,
                     isFirstItem = index == 0,
                     isLastItem = index == mediaHolder.folders.lastIndex,
                     onClick = {

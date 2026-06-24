@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -36,6 +37,7 @@ import dev.anilbeesetti.nextplayer.core.model.Folder
 import dev.anilbeesetti.nextplayer.core.model.MediaLayoutMode
 import dev.anilbeesetti.nextplayer.core.ui.R
 import dev.anilbeesetti.nextplayer.core.ui.components.NextSegmentedListItem
+import dev.anilbeesetti.nextplayer.core.ui.designsystem.NextIcons
 import dev.anilbeesetti.nextplayer.core.ui.theme.NextPlayerTheme
 
 @Composable
@@ -47,6 +49,7 @@ fun FolderItem(
     isFirstItem: Boolean = false,
     isLastItem: Boolean = false,
     selected: Boolean = false,
+    isPinned: Boolean = false,
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -59,6 +62,7 @@ fun FolderItem(
             isFirstItem = isFirstItem,
             isLastItem = isLastItem,
             selected = selected,
+            isPinned = isPinned,
             onClick = onClick,
             onLongClick = onLongClick,
         )
@@ -70,6 +74,7 @@ fun FolderItem(
             isFirstItem = isFirstItem,
             isLastItem = isLastItem,
             selected = selected,
+            isPinned = isPinned,
             onClick = onClick,
             onLongClick = onLongClick,
         )
@@ -86,6 +91,7 @@ private fun FolderListItem(
     isFirstItem: Boolean = false,
     isLastItem: Boolean = false,
     selected: Boolean = false,
+    isPinned: Boolean = false,
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -120,6 +126,18 @@ private fun FolderListItem(
                         .width(min(90.dp, LocalConfiguration.current.screenWidthDp.dp * 0.3f))
                         .aspectRatio(20 / 17f),
                 )
+
+                if (isPinned) {
+                    Icon(
+                        imageVector = NextIcons.Pin,
+                        contentDescription = stringResource(R.string.pin),
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(4.dp)
+                            .size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
 
                 if (preferences.showDurationField) {
                     InfoChip(
@@ -191,6 +209,7 @@ private fun FolderGridItem(
     isFirstItem: Boolean = false,
     isLastItem: Boolean = false,
     selected: Boolean = false,
+    isPinned: Boolean = false,
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -230,6 +249,18 @@ private fun FolderGridItem(
                             .width(min(90.dp, LocalConfiguration.current.screenWidthDp.dp * 0.3f))
                             .aspectRatio(20 / 17f),
                     )
+
+                    if (isPinned) {
+                        Icon(
+                            imageVector = NextIcons.Pin,
+                            contentDescription = stringResource(R.string.pin),
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(4.dp)
+                                .size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
 
                     if (preferences.showDurationField) {
                         InfoChip(

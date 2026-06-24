@@ -78,6 +78,7 @@ class MediaPickerViewModel @Inject constructor(
             is MediaPickerAction.PlaySelectedItems -> playSelectedItems(action.selectionItems)
             is MediaPickerAction.DeleteSelectedItems -> deleteSelectedItems(action.selectionItems)
             is MediaPickerAction.ShareSelectedItems -> shareSelectedItems(action.selectionItems)
+            is MediaPickerAction.TogglePinFolders -> togglePinFolders(action.selectionItems)
             is MediaPickerAction.ShowMediaInfo -> showMediaInfo(action.video)
             MediaPickerAction.DismissMediaInfo -> uiStateInternal.update { it.copy(mediaInfo = null) }
         }
@@ -160,6 +161,28 @@ class MediaPickerViewModel @Inject constructor(
         }
     }
 
+    private fun togglePinFolders(selectedItems: Set<SelectionItem>) {
+        viewModelScope.launch {
+            val folderPaths = selectedItems
+                .filterIsInstance<SelectionItem.Folder>()
+                .map { it.path }
+            if (folderPaths.isEmpty()) return@launch
+
+            val now = System.currentTimeMillis()
+            preferencesRepository.updateApplicationPreferences { prefs ->
+                val currentPinned = prefs.pinnedFolders
+                // 已置顶的取消置顶，未置顶的添加置顶
+                val toUnpin = folderPaths.filter { it in currentPinned }
+                val toPin = folderPaths.filter { it !in currentPinned }
+
+                val updated = currentPinned.toMutableMap()
+                toUnpin.forEach { updated.remove(it) }
+                toPin.forEach { updated[it] = now }
+                prefs.copy(pinnedFolders = updated)
+            }
+        }
+    }
+
     private fun updateMenu(preferences: ApplicationPreferences) {
         viewModelScope.launch {
             preferencesRepository.updateApplicationPreferences { preferences }
@@ -205,6 +228,7 @@ sealed interface MediaPickerAction {
     data class PlaySelectedItems(val selectionItems: Set<SelectionItem>) : MediaPickerAction
     data class DeleteSelectedItems(val selectionItems: Set<SelectionItem>) : MediaPickerAction
     data class ShareSelectedItems(val selectionItems: Set<SelectionItem>) : MediaPickerAction
+    data class TogglePinFolders(val selectionItems: Set<SelectionItem>) : MediaPickerAction
     data class ShowMediaInfo(val video: Video): MediaPickerAction
     data object DismissMediaInfo : MediaPickerAction
 }

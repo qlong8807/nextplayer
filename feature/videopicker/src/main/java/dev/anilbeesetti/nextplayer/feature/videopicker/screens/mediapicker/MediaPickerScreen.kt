@@ -265,6 +265,10 @@ internal fun MediaPickerScreen(
                 show = selectionManager.isInSelectionMode && selectionManager.selectionItems.isNotEmpty(),
                 showRenameAction = selectionManager.isSingleVideoSelected,
                 showInfoAction = selectionManager.isSingleVideoSelected,
+                showPinAction = selectionManager.selectionItems.any { it is SelectionItem.Folder },
+                isAllPinned = selectionManager.selectionItems
+                    .filterIsInstance<SelectionItem.Folder>()
+                    .all { it.path in uiState.preferences.pinnedFolders },
                 onPlayAction = {
                     onAction(MediaPickerAction.PlaySelectedItems(selectionManager.selectionItems))
                     selectionManager.exitSelectionMode()
@@ -280,6 +284,10 @@ internal fun MediaPickerScreen(
                     val video = (uiState.mediaDataState as? DataState.Success)?.value?.videos
                         ?.find { it.uriString == selectedVideo.id } ?: return@SelectionActionsSheet
                     onAction(MediaPickerAction.ShowMediaInfo(video))
+                    selectionManager.exitSelectionMode()
+                },
+                onPinAction = {
+                    onAction(MediaPickerAction.TogglePinFolders(selectionManager.selectionItems))
                     selectionManager.exitSelectionMode()
                 },
                 onShareAction = {
@@ -574,8 +582,11 @@ private fun SelectionActionsSheet(
     show: Boolean,
     showRenameAction: Boolean,
     showInfoAction: Boolean,
+    showPinAction: Boolean = false,
+    isAllPinned: Boolean = false,
     onPlayAction: () -> Unit,
     onRenameAction: () -> Unit,
+    onPinAction: () -> Unit = {},
     onShareAction: () -> Unit,
     onInfoAction: () -> Unit,
     onDeleteAction: () -> Unit,
@@ -622,6 +633,13 @@ private fun SelectionActionsSheet(
                         imageVector = NextIcons.Edit,
                         title = stringResource(R.string.rename),
                         onClick = onRenameAction,
+                    )
+                }
+                if (showPinAction) {
+                    SelectionAction(
+                        imageVector = NextIcons.Pin,
+                        title = stringResource(if (isAllPinned) R.string.unpin else R.string.pin),
+                        onClick = onPinAction,
                     )
                 }
                 SelectionAction(

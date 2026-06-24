@@ -9,6 +9,7 @@ import dev.anilbeesetti.nextplayer.core.data.repository.PreferencesRepository
 import dev.anilbeesetti.nextplayer.core.model.Folder
 import dev.anilbeesetti.nextplayer.core.model.Sort
 import dev.anilbeesetti.nextplayer.core.model.Video
+import dev.anilbeesetti.nextplayer.core.model.sortedWithPinned
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -39,9 +40,9 @@ class GetFolderTreeMediaUseCase @Inject constructor(
             val sort = Sort(by = preferences.sortBy, order = preferences.sortOrder)
 
             if (folderPath != null) {
-                mediaUnder(folderPath, included, preferences.excludeFolders, sort)
+                mediaUnder(folderPath, included, preferences.excludeFolders, sort, preferences.pinnedFolders)
             } else {
-                topLevelMedia(included, preferences.excludeFolders, sort)
+                topLevelMedia(included, preferences.excludeFolders, sort, preferences.pinnedFolders)
             }
         }.flowOn(defaultDispatcher)
     }
@@ -50,20 +51,34 @@ class GetFolderTreeMediaUseCase @Inject constructor(
      * The top level: one folder per storage volume that contains videos, or — when only a single
      * volume has videos — that volume's contents shown directly (no volume wrapper).
      */
-    private fun topLevelMedia(videos: List<Video>, excludedFolders: Collection<String>, sort: Sort): MediaHolder {
+    private fun topLevelMedia(
+        videos: List<Video>,
+        excludedFolders: Collection<String>,
+        sort: Sort,
+        pinnedFolders: Map<String, Long>,
+    ): MediaHolder {
         val volumeRoots = videos.mapNotNull { volumeRootOf(it.path) }.distinct()
         if (volumeRoots.size <= 1) {
             val root = volumeRoots.firstOrNull() ?: Environment.getExternalStorageDirectory().path
-            return mediaUnder(root, videos, excludedFolders, sort)
+            return mediaUnder(root, videos, excludedFolders, sort, pinnedFolders)
         }
         val folders = volumeRoots
             .filterNot { it in excludedFolders }
             .map { volumeRoot -> summarize(volumeRoot, videosUnder(volumeRoot, videos)) }
-        return MediaHolder(videos = emptyList(), folders = folders.sortedWith(sort.folderComparator()))
+        return MediaHolder(
+            videos = emptyList(),
+            folders = folders.sortedWith(sort.folderComparator()).sortedWithPinned(pinnedFolders),
+        )
     }
 
     /** The videos directly inside [root] plus a [Folder] for each immediate subfolder with videos. */
-    private fun mediaUnder(root: String, videos: List<Video>, excludedFolders: Collection<String>, sort: Sort): MediaHolder {
+    private fun mediaUnder(
+        root: String,
+        videos: List<Video>,
+        excludedFolders: Collection<String>,
+        sort: Sort,
+        pinnedFolders: Map<String, Long>,
+    ): MediaHolder {
         val descendants = videosUnder(root, videos)
         val directVideos = descendants.filter { it.parentPath == root }
         val folders = immediateChildFolders(root, descendants)
@@ -72,7 +87,7 @@ class GetFolderTreeMediaUseCase @Inject constructor(
 
         return MediaHolder(
             videos = directVideos.sortedWith(sort.videoComparator()),
-            folders = folders.sortedWith(sort.folderComparator()),
+            folders = folders.sortedWith(sort.folderComparator()).sortedWithPinned(pinnedFolders),
         )
     }
 
