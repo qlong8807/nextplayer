@@ -9,15 +9,15 @@ plugins {
 }
 
 android {
-    namespace = "dev.anilbeesetti.nextplayer"
+    namespace = "com.easyplayer.app"
 
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        applicationId = "dev.anilbeesetti.nextplayer"
-        versionCode = 56
-        versionName = "0.16.3"
+        applicationId = "com.easyplayer.app"
+        versionCode = 1
+        versionName = "1.0.0"
     }
 
     buildFeatures {
