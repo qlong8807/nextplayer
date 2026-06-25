@@ -140,7 +140,7 @@ private fun VideoListItem(
             ) {
                 if (preferences.showPathField) {
                     Text(
-                        text = "${video.formattedFileSize} | ${video.path.substringBeforeLast("/")}",
+                        text = video.path.substringBeforeLast("/"),
                         maxLines = 2,
                         style = MaterialTheme.typography.bodySmall,
                         overflow = TextOverflow.Ellipsis,
@@ -151,6 +151,9 @@ private fun VideoListItem(
                     horizontalArrangement = Arrangement.spacedBy(5.dp),
                     verticalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
+                    if (preferences.showSizeField) {
+                        InfoChip(text = video.formattedFileSize)
+                    }
                     if (preferences.showResolutionField && video.height > 0) {
                         InfoChip(text = "${video.height}p")
                     }
