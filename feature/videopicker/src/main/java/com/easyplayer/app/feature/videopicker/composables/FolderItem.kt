@@ -181,7 +181,8 @@ private fun FolderListItem(
                     if (folder.videosCount > 0) {
                         InfoChip(
                             text = "${folder.videosCount} " +
-                                stringResource(id = R.string.video.takeIf { folder.videosCount == 1 } ?: R.string.videos),
+                                stringResource(id = R.string.video.takeIf { folder.videosCount == 1 } ?: R.string.videos) +
+                                " (${Utils.formatFileSize(folder.totalSize)})",
                         )
                     }
                     if (folder.foldersCount > 0) {
@@ -189,9 +190,6 @@ private fun FolderListItem(
                             text = "${folder.foldersCount} " +
                                 stringResource(id = R.string.folder.takeIf { folder.foldersCount == 1 } ?: R.string.folders),
                         )
-                    }
-                    if (preferences.showSizeField) {
-                        InfoChip(text = Utils.formatFileSize(folder.totalSize))
                     }
                 }
             }
