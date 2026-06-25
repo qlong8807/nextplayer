@@ -623,22 +623,6 @@ class PlayerService : MediaSessionService() {
                 val video = mediaRepository.getVideoByUri(uri = mediaItem.mediaId)
                 val videoState = mediaRepository.getVideoState(uri = mediaItem.mediaId)
 
-                val externalSubs = videoState?.externalSubs ?: emptyList()
-                val localSubs = (videoState?.path ?: getPath(uri))?.let {
-                    File(it).getLocalSubtitles(
-                        context = this@PlayerService,
-                        excludeSubsList = externalSubs,
-                    )
-                } ?: emptyList()
-
-                val existingSubConfigurations = mediaItem.localConfiguration?.subtitleConfigurations ?: emptyList()
-                val subConfigurations = (localSubs + externalSubs).map { subtitleUri ->
-                    uriToSubtitleConfiguration(
-                        uri = subtitleUri,
-                        subtitleEncoding = playerPreferences.subtitleTextEncoding,
-                    )
-                }
-
                 // Use placeholder artwork initially - actual artwork will be loaded in background
                 val artworkUri = getDefaultArtworkUri()
 
@@ -651,7 +635,19 @@ class PlayerService : MediaSessionService() {
                 val subtitleDelay = mediaItem.mediaMetadata.subtitleDelayMilliseconds ?: videoState?.subtitleDelayMilliseconds
                 val subtitleSpeed = mediaItem.mediaMetadata.subtitleSpeed ?: videoState?.subtitleSpeed
 
-                mediaItem.buildUpon().apply {
+                // Get existing subtitle configurations (from intent)
+                val existingSubConfigurations = mediaItem.localConfiguration?.subtitleConfigurations ?: emptyList()
+
+                // Use only external subs from database for fast startup, local subs will be loaded async
+                val externalSubs = videoState?.externalSubs ?: emptyList()
+                val subConfigurations = externalSubs.map { subtitleUri ->
+                    uriToSubtitleConfiguration(
+                        uri = subtitleUri,
+                        subtitleEncoding = playerPreferences.subtitleTextEncoding,
+                    )
+                }
+
+                val result = mediaItem.buildUpon().apply {
                     setSubtitleConfigurations(existingSubConfigurations + subConfigurations)
                     setMediaMetadata(
                         MediaMetadata.Builder().apply {
@@ -669,8 +665,56 @@ class PlayerService : MediaSessionService() {
                         }.build(),
                     )
                 }.build()
+
+                // Load local subtitles asynchronously after returning
+                launchLocalSubsLoad(mediaItem.mediaId, videoState?.path, externalSubs)
+
+                result
             }
         }.awaitAll()
+    }
+
+    /**
+     * 异步加载本地字幕文件，不阻塞播放启动
+     */
+    private fun launchLocalSubsLoad(mediaId: String, videoPath: String?, externalSubs: List<Uri>) {
+        serviceScope.launch(Dispatchers.Default) {
+            try {
+                val uri = mediaId.toUri()
+                val localSubs = (videoPath ?: getPath(uri))?.let {
+                    File(it).getLocalSubtitles(
+                        context = this@PlayerService,
+                        excludeSubsList = externalSubs,
+                    )
+                } ?: emptyList()
+
+                if (localSubs.isEmpty()) return@launch
+
+                val subConfigurations = localSubs.map { subtitleUri ->
+                    uriToSubtitleConfiguration(
+                        uri = subtitleUri,
+                        subtitleEncoding = playerPreferences.subtitleTextEncoding,
+                    )
+                }
+
+                // Update player with local subtitles
+                withContext(Dispatchers.Main) {
+                    val player = mediaSession?.player ?: return@withContext
+                    val currentMediaItem = player.currentMediaItem ?: return@withContext
+                    if (currentMediaItem.mediaId != mediaId) return@withContext
+
+                    val existingSubs = currentMediaItem.localConfiguration?.subtitleConfigurations ?: emptyList()
+                    player.replaceMediaItem(
+                        player.currentMediaItemIndex,
+                        currentMediaItem.buildUpon()
+                            .setSubtitleConfigurations(existingSubs + subConfigurations)
+                            .build(),
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
     
     private fun getDefaultArtworkUri(): Uri = Uri.Builder().apply {

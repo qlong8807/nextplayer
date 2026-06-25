@@ -167,6 +167,28 @@ fun Context.getFilenameFromContentUri(uri: Uri): String? {
 }
 
 fun Context.getMediaContentUri(uri: Uri): Uri? {
+    // 快速路径：如果已经是 MediaStore content URI，直接返回
+    if (uri.scheme == ContentResolver.SCHEME_CONTENT &&
+        uri.authority == "media" &&
+        uri.toString().startsWith(VIDEO_COLLECTION_URI.toString())
+    ) {
+        return uri
+    }
+
+    // 快速路径：如果是 content URI 且包含视频 ID，尝试直接使用
+    if (uri.scheme == ContentResolver.SCHEME_CONTENT && uri.lastPathSegment?.toLongOrNull() != null) {
+        try {
+            val id = uri.lastPathSegment!!.toLong()
+            val contentUri = ContentUris.withAppendedId(VIDEO_COLLECTION_URI, id)
+            // 验证 URI 是否有效
+            contentResolver.query(contentUri, arrayOf(MediaStore.Video.Media._ID), null, null, null)?.use {
+                if (it.moveToFirst()) return contentUri
+            }
+        } catch (e: Exception) {
+            // 继续使用原始方法
+        }
+    }
+
     val path = getPath(uri) ?: return null
 
     val column = MediaStore.Video.Media._ID
