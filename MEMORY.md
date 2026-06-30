@@ -1,0 +1,1 @@
+- [GitHub Release Only](github-release-only.md) — 打包只用 Actions 生成 Release，不发布应用商店

@@ -72,9 +72,11 @@ class RotationState(
 
     suspend fun observe() {
         setOrientation()
+        // 延迟屏幕旋转，直到视频播放准备好，避免在准备期间触发方向切换
         player.listen { events ->
             if (events.contains(Player.EVENT_VIDEO_SIZE_CHANGED)) {
-                if (screenOrientation == ScreenOrientation.VIDEO_ORIENTATION) {
+                // 只有当播放器处于 READY 状态时才切换方向
+                if (player.playbackState == Player.STATE_READY && screenOrientation == ScreenOrientation.VIDEO_ORIENTATION) {
                     activity.requestedOrientation = getVideoBasedOrientation()
                 }
             }
